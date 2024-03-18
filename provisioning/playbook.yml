@@ -1,0 +1,106 @@
+---
+###
+### This playbook aims to prepare a new Vagrant box based on bento/ubuntu-22.04.
+### To install Docker, tasks were based on https://docs.docker.com/engine/install/ubuntu
+###
+### Author: Daiane A Fraga
+### Date: 18-03-2024
+###
+
+- name: Prepare a new box based on Ubuntu 22.04
+  # Target all machines
+  hosts: all
+  # Vagrant will connect to VM using the vagrant user
+  remote_user: vagrant
+  # Set a user with privileges
+  become_user: root
+  # Activate privilege escalation
+  become: true
+
+  tasks:
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+    - name: This playbook must be run on Ubuntu only
+      ansible.builtin.assert: { that: "ansible_distribution == 'Ubuntu'" }
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+    - name: Update apt cache and install some useful packages
+      ansible.builtin.apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - git
+          - iputils-ping
+          - traceroute
+          - vim
+        state: present
+        update_cache: true
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+    - name: Create the keyrings directory (equivalent to "install -m 0755 -d /etc/apt/keyrings")
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/get_url_module.html
+    - name: Install GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: a+r
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html
+    - name: Add docker repository to sources.list (create a dedicated file called docker.list)
+      ansible.builtin.apt_repository:
+        repo: >
+          deb [arch={{ architecture }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: true
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+    - name: Install Docker version "{{ docker_version }}"
+      ansible.builtin.apt:
+        pkg:
+          - "docker-ce={{ docker_version }}"
+          - "docker-ce-cli={{ docker_version }}"
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/group_module.html
+    - name: Create a group called "{{ automation_username }}"
+      ansible.builtin.group:
+        name: "{{ automation_username }}"
+        state: present
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
+    - name: Add a new user called "{{ automation_username }}"
+      ansible.builtin.user:
+        name: "{{ automation_username }}"
+        shell: /bin/bash
+        create_home: true
+        expires: -1
+        # password_hash: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/password_hash_filter.html
+        password: "{{ automation_userpass | password_hash }}"
+        group: "{{ automation_username }}"
+        append: true
+        groups: docker
+        state: present
+
+      # https://docs.ansible.com/ansible/latest/collections/community/general/sudoers_module.html
+    - name: Allow the "{{ automation_username }}" user to sudo
+      community.general.sudoers:
+        name: "{{ automation_username }}-automation-user"
+        state: present
+        user: "{{ automation_username }}"
+        commands: ALL
+
+      # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+    - name: Check that docker run works
+      ansible.builtin.command: docker run hello-world
+      register: docker_run_output
+      changed_when: docker_run_output.rc != 0

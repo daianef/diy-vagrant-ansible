@@ -1,0 +1,7 @@
+---
+
+architecture: amd64
+docker_version: "5:25.0.4-1~ubuntu.22.04~jammy"
+automation_username: "project01"
+# vault_automation_userpass comes from the vault file
+automation_userpass: "{{ vault_automation_userpass | default('dummypassword') }}"
