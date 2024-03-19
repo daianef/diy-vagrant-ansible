@@ -92,15 +92,15 @@
         state: present
 
       # https://docs.ansible.com/ansible/latest/collections/community/general/sudoers_module.html
-    - name: Allow the "{{ automation_username }}" user to sudo
+    - name: Allow new user to sudo
       community.general.sudoers:
-        name: "{{ automation_username }}-automation-user"
+        name: "automation-user"
         state: present
         user: "{{ automation_username }}"
         commands: ALL
 
       # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
     - name: Check that docker run works
-      ansible.builtin.command: docker run hello-world
+      ansible.builtin.command: docker run --rm hello-world
       register: docker_run_output
       changed_when: docker_run_output.rc != 0

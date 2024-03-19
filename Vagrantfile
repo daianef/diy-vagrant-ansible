@@ -19,6 +19,10 @@ VAGRANT_CONFIG_VERSION = "2"
 BASE_BOX_NAME = "bento/ubuntu-22.04"
 # Base box version
 BASE_BOX_VERSION = "202401.31.0"
+# Path to Ansible playbook
+ANSIBLE_PLAYBOOK_PATH = "provisioning/playbook.yml"
+# Path to Ansible requirements
+ANSIBLE_REQ_PATH = "provisioning/requirements.yml"
 
 # Here we define our configuration block...
 Vagrant.configure(VAGRANT_CONFIG_VERSION) do |config|
@@ -43,7 +47,7 @@ Vagrant.configure(VAGRANT_CONFIG_VERSION) do |config|
     # Configure Ansible as provisioner
     config.vm.provision "ansible" do |ansible|
         # Set the relative path to the playbook file
-        ansible.playbook = "provisioning/playbook.yml"
+        ansible.playbook = ANSIBLE_PLAYBOOK_PATH
         # Ansible will prompt for a password to decrypt files using Ansible Vault
         ansible.ask_vault_pass = true
         # Set the minimal version of Ansible to be supported here
@@ -51,6 +55,6 @@ Vagrant.configure(VAGRANT_CONFIG_VERSION) do |config|
         # Set the relative path to the requirements file
         # (it allows to install collections and roles from Ansible Galaxy
         # before executing Playbooks)
-        ansible.galaxy_role_file = "provisioning/requirements.yml"
+        ansible.galaxy_role_file = ANSIBLE_REQ_PATH
     end
 end

@@ -1,4 +1,12 @@
 ---
+###
+### This file can list collections and roles to be installed from Ansible Galaxy
+### https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html#install-multiple-collections-with-a-requirements-file
+###
+### Author: Daiane A Fraga
+### Date: 18-03-2024
+###
+
 collections:
 - name: community.general
   version: "8.4.0"
